@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { useAuthStore } from "../stores/authStore";
 import MainLayout from "../layout/Main.vue";
 import DashboardOverview1 from "../views/dashboard-overview-1/Main.vue";
 import DashboardOverview2 from "../views/dashboard-overview-2/Main.vue";
@@ -22,7 +23,7 @@ import CrudForm from "../views/crud-form/Main.vue";
 import WizardLayout1 from "../views/wizard-layout-1/Main.vue";
 import WizardLayout2 from "../views/wizard-layout-2/Main.vue";
 import WizardLayout3 from "../views/wizard-layout-3/Main.vue";
-import Login from "../views/login/Main.vue";
+//import aLogin from "../views/login/Main.vue";
 import Register from "../views/register/Main.vue";
 import ErrorPage from "../views/error-page/Main.vue";
 import RegularTable from "../views/regular-table/Main.vue";
@@ -51,12 +52,18 @@ import Slider from "../views/slider/Main.vue";
 import ImageZoom from "../views/image-zoom/Main.vue";
 
 /* START: custom */
+import Login from "../views/auth/session/Login.vue";
 import AccountIndex from "../views/auth/account/Index.vue";
 import AccountCreate from "../views/auth/account/Create.vue";
 import AccountEdit from "../views/auth/account/Edit.vue";
 /* END: custom */
 
 const routes = [
+  {
+    path: "/login",
+    name: "login",
+    component: Login,
+  },
   {
     path: "/",
     component: MainLayout,
@@ -66,8 +73,9 @@ const routes = [
         name: "dashboard-overview-1",
         component: DashboardOverview1,
       },
+      
       {
-        path: "/accounts",
+        path: "/account",
         name: "account.index",
         component: AccountIndex,
       },
@@ -309,11 +317,11 @@ const routes = [
       },
     ],
   },
-  {
-    path: "/login",
-    name: "login",
-    component: Login,
-  },
+  // {
+  //   path: "/alogin",
+  //   name: "alogin",
+  //   component: aLogin,
+  // },
   {
     path: "/register",
     name: "register",
@@ -336,6 +344,15 @@ const router = createRouter({
   scrollBehavior(to, from, savedPosition) {
     return savedPosition || { left: 0, top: 0 };
   },
+});
+
+router.beforeEach((to) => {
+  const publicPages = ["/login", "/register"];
+  const authRequired = !publicPages.includes(to.path);
+  const auth = useAuthStore();
+  if (authRequired && !auth.token) {
+    return { name: "login" };
+  }
 });
 
 export default router;

@@ -7,6 +7,9 @@ const router = useRouter();
 import axios from "axios";
 import TextInput from "../../../components/form/TextInput.vue";
 import FloatInput from "../../../components/form/FloatInput.vue";
+import { useAccountsStore } from "../../../stores/accountsStore";
+
+const accountsStore = useAccountsStore();
 
 const props = defineProps({
   slug: {
@@ -16,9 +19,6 @@ const props = defineProps({
 let account = ref();
 let loading = ref(true);
   
-  
-
-
 const rules = computed(() => {
   return {
     name:{
@@ -36,7 +36,7 @@ let form = ref({
     initialBalance: account?.initialBalance ?? null
 });
 
-const v$ = useValidate(rules, form);
+const v$ = useValidate(rules, accountsStore.account);
 
 async function submit() {
   
@@ -51,18 +51,20 @@ async function submit() {
   if (props.slug) 
   {
     console.log("update");
-    axios.put(`/Account/${form.value.id}`, form.value).then((response) => {
-      router.push({ name: "account.index" });
-    })
-  } 
+    accountsStore.updateAccount();
+    // axios.put(`/Account/${form.value.id}`, form.value).then((response) => {
+    //   router.push({ name: "account.index" });
+    //})
+  }
   else 
   {
     console.log("create");
-    axios.post("/Account", form.value).then((response) => {
-      router.push({ name: "account.index" });
-    }).catch((error) => {
-      console.log(error);
-    })
+    accountsStore.createAccount();
+    // axios.post("/Account", form.value).then((response) => {
+    //   router.push({ name: "account.index" });
+    // }).catch((error) => {
+    //   console.log(error);
+    // })
   }
 };
 
@@ -85,21 +87,33 @@ axios.get(url).then((response) => {
 })
 }
 
-fetchAccount();
+accountsStore.clearAccount();
+if (props.slug) {
+  console.log('update')
+  accountsStore.fetchAccount(props.slug);
+} 
+else 
+{
+  console.log('create')
+}
 </script>
 
 <template>
-  <form id="accountForm" @submit.prevent="submit()" method="post" class="intro-y box p-5" v-if="!loading">
-      
-      <input type="hidden" v-model="form.id">
-      <TextInput v-model="form.name" :validator="v$.name" title="Nome" />
-      <FloatInput v-model="form.initialBalance" :validator="v$.initialBalance" title="Saldo iniziale" />
+  <form id="accountForm" @submit.prevent="submit()" method="post" class="intro-y box p-5" >
+      <div v-show="!accountsStore.getIsLoading">
 
-      <div class="text-right mt-5">
+        <input type="hidden" v-model="accountsStore.account.id">
+        <TextInput v-model="accountsStore.account.name" :validator="v$.name" title="Nome" />
+        <FloatInput v-model="accountsStore.account.initialBalance" :validator="v$.initialBalance" title="Saldo iniziale" />
+        
+      </div>
+      <div class="text-right mt-5" >
         <router-link :to="{ name: 'account.index' }" class="btn btn-outline-secondary w-24 mr-1">
           Indietro
         </router-link>
-        <button type="submit" class="btn btn-primary w-24">{{ props.slug ? 'Modifica' : 'Aggiungi' }}</button>
+        <button type="submit" class="btn btn-primary w-24" v-show="!accountsStore.getIsLoading">
+          {{ props.slug ? 'Modifica' : 'Aggiungi' }}
+        </button>
       </div>
   </form>
 </template>

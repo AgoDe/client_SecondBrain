@@ -6,19 +6,6 @@ import axios from "axios";
 import AccountForm from "./_AccountForm.vue";
 
 const slug = router.currentRoute.value.params.slug
-let account = ref();
-let loading = ref(true);
-  const fetchAccount = () => {
-      const url = `/Account/${slug}`;
-      axios.get(url).then((response) => {
-          console.log(response.data);
-          account.value = response.data.result;
-      }).finally(() => {
-          loading.value = false
-      })
-  }
-  
-  fetchAccount();
 </script>
 
 <template>

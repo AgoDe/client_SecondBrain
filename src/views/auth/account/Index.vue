@@ -5,59 +5,22 @@ import DeleteModal from "../../../global-components/modal/IndexDeleteModal.vue";
 import SearchInput from "../../../components/filters/SearchInput.vue";
 import PageSizeSelect from "../../../components/filters/PageSizeSelect.vue";
 import Pagination from "../../../components/filters/Pagination.vue";
-const showModal = ref(false);
+import { useAccountsStore } from "../../../stores/accountsStore";
 
-let AccountToDelete = ref(0);
-let accounts = ref([]);
-let pagination = ref({});
-let loading = ref(true);
-let filters = ref({
-    pageSize: 3,
-    search: "",
-    page: 1
-})
-let count = ref(0);
-
-function fetchAccounts() {
-    loading.value = true
-    if (filters.value.page > pagination.value.totalPages) {
-        filter.value.page = 1
-    }
-
-    let url = `/Account?PageNumber=${filters.value.page}`;
-    if (filters.value.search.length > 0) {
-        url += `&Search=${filters.value.search}`
-    }
-    if (filters.value.pageSize > 0) {
-        url += `&PageSize=${filters.value.pageSize}`
-    }
-
-    console.log(url);
-    axios.get(url).then((response) => {
-        accounts.value = response.data.result;
-        pagination.value = response.data.pagination;
-    }).finally(() => {
-        loading.value = false
-    })
-}
+const accountsStore = useAccountsStore();
+const showModal = ref(false)
+const search = ref("")
+const AccountToDelete = ref(null)
 
 const deleteAccount = () => {
     console.log('delete ' + AccountToDelete.value);
     showModal.value = false;
-    axios
-        .delete(`/Account/${AccountToDelete.value}`)
-        .then((response) => {
-            fetchAccounts();
-        })
-        .catch((error) => {
-            console.log(error);
-        });
+    accountsStore.deleteAccount(AccountToDelete.value);
 };
 
 function pageSelection(value) {
-    filters.value.page = value;
+    accountsStore.setPageNumber(value);
 };
-
 
 const showDeleteModal = (id) => {
     showModal.value = true;
@@ -66,10 +29,17 @@ const showDeleteModal = (id) => {
 
 
 watch(
-    filters,
+    () => accountsStore.getFilters,
+    () => {
+        accountsStore.fetchAccounts()
+    },
+    { immediate: true, deep: true }
+)
+watch(
+    search,
     throttle(() => {
-        fetchAccounts();
-    }, 1200), { immediate: true, deep: true }
+        accountsStore.setSearchFilter(search.value);
+    }, 1200), { deep: true }
 )
 </script>
 
@@ -100,10 +70,9 @@ watch(
                 </DropdownMenu>
             </Dropdown>
             <div class="hidden md:block mx-auto text-slate-500">
-                Showing {{ pagination.pageSize > pagination.totalCount ? pagination.totalCount : pagination.pageSize }} of {{ pagination.totalCount }} entries
             </div>
             <div class="w-full sm:w-auto mt-3 sm:mt-0 sm:ml-auto md:ml-0">
-                <search-input v-model="filters.search"></search-input>
+                <search-input v-model="search"></search-input>
             </div>
         </div>
         <!-- BEGIN: Data List -->
@@ -113,13 +82,13 @@ watch(
                     <tr>
                         <th class="whitespace-nowrap">IMAGES</th>
                         <th class="whitespace-nowrap">ACCOUNT</th>
-                        <th class="text-center whitespace-nowrap">STOCK</th>
+                        <th class="text-center whitespace-nowrap">SALDO INIZIALE</th>
                         <th class="text-center whitespace-nowrap">STATUS</th>
                         <th class="text-center whitespace-nowrap">AZIONI</th>
                     </tr>
                 </thead>
-                <tbody v-if="!loading">
-                    <tr v-for="account in accounts" :key="account.id" class="intro-x">
+                <tbody v-show="!accountsStore.getIsLoading">
+                    <tr v-for="account in accountsStore.accounts" :key="account.id" class="intro-x">
                         <td class="w-40">
                             <div class="flex">
                                 <div class="w-10 h-10 image-fit zoom-in">
@@ -132,7 +101,7 @@ watch(
                                 {{ account.name }}
                             </a>
                             <div class="text-slate-500 text-xs whitespace-nowrap mt-0.5">
-    
+                                
                             </div>
                         </td>
                         <td class="text-center"></td>
@@ -159,8 +128,8 @@ watch(
         <!-- END: Data List -->
         <!-- BEGIN: Pagination -->
         <div class="intro-y col-span-12 flex flex-wrap sm:flex-row sm:flex-nowrap items-center">
-            <Pagination v-model="pagination" @pageSelection="pageSelection"></Pagination>
-            <PageSizeSelect v-model="filters.pageSize" />
+            <Pagination v-model="accountsStore.pagination" @pageSelection="pageSelection"></Pagination>
+            <PageSizeSelect v-model="accountsStore.filters.pageSize" />
         </div>
         <!-- END: Pagination -->
     </div>
